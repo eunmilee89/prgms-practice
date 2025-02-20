@@ -16,24 +16,29 @@ app.post('/login', (req, res) => {
 
   let foundUser;
 
-  for (const id of db.keys()) {
-    const user = db.get(id);
+  db.forEach((user) => {
     if (user.userId === userId) {
       foundUser = user;
-      break;
     }
-  }
+  });
 
-  if (!foundUser) {
-    return res.status(404).json({ message: '존재하지 않는 사용자입니다.' });
+  if (isExist(foundUser)) {
+    res.status(200).json({ message: `${foundUser.name}님 환영합니다.` });
+    if (foundUser.password !== password) {
+      res.status(401).json({ message: '비밀번호가 틀렸습니다.' });
+    }
+  } else {
+    res.status(404).json({ message: '존재하지 않는 사용자입니다.' });
   }
-
-  if (foundUser.password !== password) {
-    return res.status(401).json({ message: '비밀번호가 틀렸습니다.' });
-  }
-
-  res.status(200).json({ message: `${foundUser.name}님 환영합니다.` });
 });
+
+function isExist(obj) {
+  if (Object.keys(obj).length) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 // 회원 가입 : POST /join
 app.post('/join', (req, res) => {
