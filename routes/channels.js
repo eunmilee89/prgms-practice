@@ -1,16 +1,17 @@
 const express = require('express');
-const app = express();
-app.listen(7777);
-app.use(express.json());
+const router = express.Router();
+
+router.use(express.json());
 
 let db = new Map();
 let id = 1;
 
-app
-  .route('/channels')
+router
+  .route('/')
   .post((req, res) => {
     if (req.body.author) {
-      db.set(id++, req.body);
+      let channel = req.body;
+      db.set(id++, channel);
 
       res.status(201).json({
         message: `${db.get(id - 1).author}님의 글쓰기 생활을 응원합니다.`,
@@ -22,22 +23,28 @@ app
     }
   }) // 작가 채널 개별 생성
   .get((req, res) => {
-    if (db.size) {
-      let channels = [];
+    let { userId } = req.body;
+    let channels = [];
+
+    if (db.size && userId) {
       db.forEach((value) => {
-        channels.push(value);
+        if (value.userId === userId) {
+          channels.push(value);
+        }
       });
 
-      res.status(200).json(channels);
+      if (channels.length) {
+        res.status(200).json(channels);
+      } else {
+        notFoundChannel();
+      }
     } else {
-      res.status(404).json({
-        message: '작가가 존재하지 않습니다.',
-      });
+      notFoundChannel();
     }
   }); // 작가 채널 전체 조회
 
-app
-  .route('/channels/:id')
+router
+  .route('/:id')
   .get((req, res) => {
     const id = parseInt(req.params.id);
 
@@ -45,9 +52,7 @@ app
     if (channel) {
       res.status(200).json(channel);
     } else {
-      res.status(404).json({
-        message: '작가 정보를 찾을 수 없습니다.',
-      });
+      notFoundChannel();
     }
   }) // 작가 채널 개별 조회
   .put((req, res) => {
@@ -55,9 +60,7 @@ app
     let channel = db.get(id);
 
     if (!channel) {
-      res.status(404).json({
-        message: '작가 정보를 찾을 수 없습니다.',
-      });
+      notFoundChannel();
     }
 
     let existingAuthor = channel.author;
@@ -79,8 +82,14 @@ app
         message: `${channel.author}(이)가 삭제되었습니다.`,
       });
     } else {
-      res.status(404).json({
-        message: '작가 정보를 찾을 수 없습니다.',
-      });
+      notFoundChannel();
     }
   }); // 작가 채널 개별 삭제
+
+function notFoundChannel() {
+  res.status(404).json({
+    message: '작가 정보를 찾을 수 없습니다.',
+  });
+}
+
+module.exports = router;
