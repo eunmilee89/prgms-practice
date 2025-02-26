@@ -10,8 +10,8 @@ router
   .route('/')
   .post((req, res) => {
     if (req.body.author) {
-      let channel = req.body;
-      db.set(id++, channel);
+      let author = req.body;
+      db.set(id++, author);
 
       res.status(201).json({
         message: `${db.get(id - 1).author}님의 글쓰기 생활을 응원합니다.`,
@@ -24,22 +24,22 @@ router
   }) // 작가 채널 개별 생성
   .get((req, res) => {
     let { userId } = req.body;
-    let channels = [];
+    let authors = [];
 
     if (db.size && userId) {
       db.forEach((value) => {
         if (value.userId === userId) {
-          channels.push(value);
+          authors.push(value);
         }
       });
 
-      if (channels.length) {
-        res.status(200).json(channels);
+      if (authors.length) {
+        res.status(200).json(authors);
       } else {
-        notFoundChannel();
+        notFoundAuthor();
       }
     } else {
-      notFoundChannel();
+      notFoundAuthor();
     }
   }); // 작가 채널 전체 조회
 
@@ -48,24 +48,24 @@ router
   .get((req, res) => {
     const id = parseInt(req.params.id);
 
-    let channel = db.get(id);
-    if (channel) {
-      res.status(200).json(channel);
+    let author = db.get(id);
+    if (author) {
+      res.status(200).json(author);
     } else {
-      notFoundChannel();
+      notFoundAuthor();
     }
   }) // 작가 채널 개별 조회
   .put((req, res) => {
     const id = parseInt(req.params.id);
-    let channel = db.get(id);
+    let author = db.get(id);
 
-    if (!channel) {
-      notFoundChannel();
+    if (!author) {
+      notFoundAuthor();
     }
 
-    let existingAuthor = channel.author;
+    let existingAuthor = author.author;
     let newAuthor = req.body.author;
-    channel.author = newAuthor;
+    author.author = newAuthor;
 
     res.status(200).json({
       message: `작가 이름이 정상적으로 수정되었습니다 기존 ${existingAuthor}에서 ${newAuthor}로 수정되었습니다.`,
@@ -74,19 +74,19 @@ router
   .delete((req, res) => {
     const id = parseInt(req.params.id);
 
-    let channel = db.get(id);
-    if (channel) {
+    let author = db.get(id);
+    if (author) {
       db.delete(id);
 
       res.status(200).json({
-        message: `${channel.author}(이)가 삭제되었습니다.`,
+        message: `${author.author}(이)가 삭제되었습니다.`,
       });
     } else {
-      notFoundChannel();
+      notFoundAuthor();
     }
   }); // 작가 채널 개별 삭제
 
-function notFoundChannel() {
+function notFoundAuthor() {
   res.status(404).json({
     message: '작가 정보를 찾을 수 없습니다.',
   });

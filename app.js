@@ -4,7 +4,7 @@ const app = express();
 app.listen(7777);
 
 const userRouter = require('./routes/users');
-const channelRouter = require('./routes/authors');
+const authorRouter = require('./routes/authors');
 
 app.use('/', userRouter);
-app.use('/channels', channelRouter);
+app.use('/authors', authorRouter);

@@ -39,7 +39,7 @@ router.post('/join', (req, res) => {
   if (userId || password || name) {
     db.set(userId, req.body);
     res.status(201).json({
-      message: `${db.get(userId - 1).name}님 환영합니다.`,
+      message: `${db.get(userId).name}님 환영합니다.`,
     });
   } else {
     res.status(400).json({
