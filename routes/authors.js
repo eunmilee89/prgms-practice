@@ -1,86 +1,126 @@
 const express = require('express');
 const router = express.Router();
 const conn = require('../mariadb');
+const { body, param, validationResult } = require('express-validator');
 
 router.use(express.json());
 
+const validate = (req, res, next) => {
+  const err = validationResult(req);
+
+  if (!err.isEmpty()) {
+    return res.status(400).json(err.array());
+  } else {
+    return next();
+  }
+};
+
 router
   .route('/')
-  .post((req, res) => {
-    const { name, userId } = req.body;
-    if (name && userId) {
+  .post(
+    [
+      body('userId').notEmpty().isInt().withMessage('숫자 입력 필요'),
+      body('name').notEmpty().isString().withMessage('문자 입력 필요'),
+      validate,
+    ],
+    (req, res, next) => {
+      const { name, userId } = req.body;
+
       const sql = 'INSERT INTO authors (name, user_id) VALUES(?, ?)';
       const values = [name, userId];
       conn.query(sql, values, (err, results) => {
+        if (err) {
+          return res.status(400).end();
+        }
         res.status(201).json(results);
       });
-    } else {
-      res.status(400).json({
-        message: '요청 값을 제대로 보내주세요',
-      });
     }
-  })
-  .get((req, res) => {
-    const { userId } = req.body;
+  )
+  .get(
+    [body('userId').notEmpty().isInt().withMessage('숫자 입력 필요'), validate],
+    (req, res, next) => {
+      const { userId } = req.body;
+      const sql = 'SELECT * FROM authors WHERE user_id = ?';
 
-    const sql = 'SELECT * FROM authors WHERE user_id = ?';
-    if (userId) {
       conn.query(sql, userId, (err, results) => {
+        if (err) {
+          return res.status(400).end();
+        }
+
         if (results.length) {
           res.status(200).json(results);
         } else {
           notFoundAuthor(res);
         }
       });
-    } else {
-      res.status(400).end();
     }
-  });
+  );
 
 router
   .route('/:id')
-  .get((req, res) => {
-    const id = parseInt(req.params.id);
+  .get(
+    [param('id').notEmpty().withMessage('작가id 필요'), validate],
+    (req, res, next) => {
+      const id = parseInt(req.params.id);
 
-    const sql = 'SELECT * FROM authors WHERE id = ?';
-    conn.query(sql, id, (err, results) => {
-      if (results.length) {
-        res.status(200).json(results);
-      } else {
-        notFoundAuthor(res);
-      }
-    });
-  })
-  .put((req, res) => {
-    const id = parseInt(req.params.id);
-    let author = db.get(id);
+      const sql = 'SELECT * FROM authors WHERE id = ?';
+      conn.query(sql, id, (err, results) => {
+        if (err) {
+          return res.status(400).end();
+        }
 
-    if (!author) {
-      notFoundAuthor(res);
-    }
-
-    let existingAuthor = author.author;
-    let newAuthor = req.body.author;
-    author.author = newAuthor;
-
-    res.status(200).json({
-      message: `작가 이름이 정상적으로 수정되었습니다 기존 ${existingAuthor}에서 ${newAuthor}로 수정되었습니다.`,
-    });
-  }) // 작가 채널 개별 수정
-  .delete((req, res) => {
-    const id = parseInt(req.params.id);
-
-    let author = db.get(id);
-    if (author) {
-      db.delete(id);
-
-      res.status(200).json({
-        message: `${author.author}(이)가 삭제되었습니다.`,
+        if (results.length) {
+          res.status(200).json(results);
+        } else {
+          notFoundAuthor(res);
+        }
       });
-    } else {
-      notFoundAuthor(res);
     }
-  }); // 작가 채널 개별 삭제
+  )
+  .put(
+    [
+      param('id').notEmpty().withMessage('작가 id 필요'),
+      body('name').notEmpty().isString().withMessage('작가 이름 필요'),
+      validate,
+    ],
+    (req, res, next) => {
+      const id = parseInt(req.params.id);
+      const { name } = req.body;
+
+      const sql = 'UPDATE authors SET name = ? WHERE id = ?';
+      const values = [name, id];
+      conn.query(sql, values, (err, results) => {
+        if (err) {
+          return res.status(400).end();
+        }
+
+        if (results.affectedRows === 0) {
+          res.status(400).end();
+        } else {
+          res.status(200).json(results);
+        }
+      });
+    }
+  )
+  .delete(
+    [param('id').notEmpty().withMessage('작가id 필요'), validate],
+    (req, res, next) => {
+      const id = parseInt(req.params.id);
+
+      const sql = 'DELETE FROM authors WHERE id = ?';
+      conn.query(sql, id, (err, results) => {
+        if (err) {
+          return res.status(400).end();
+        }
+
+        if (results.affectedRows === 0) {
+          res.status(400).end();
+        } else {
+          res.status(200).json(results);
+        }
+      });
+    }
+  );
 
 function notFoundAuthor(res) {
   res.status(404).json({
