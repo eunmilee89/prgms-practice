@@ -8,10 +8,10 @@ router.use(express.json());
 const validate = (req, res, next) => {
   const err = validationResult(req);
 
-  if (!err.isEmpty()) {
-    return res.status(400).json(err.array());
-  } else {
+  if (err.isEmpty()) {
     return next();
+  } else {
+    return res.status(400).json(err.array());
   }
 };
 
@@ -23,7 +23,7 @@ router
       body('name').notEmpty().isString().withMessage('문자 입력 필요'),
       validate,
     ],
-    (req, res, next) => {
+    (req, res) => {
       const { name, userId } = req.body;
 
       const sql = 'INSERT INTO authors (name, user_id) VALUES(?, ?)';
@@ -38,7 +38,7 @@ router
   )
   .get(
     [body('userId').notEmpty().isInt().withMessage('숫자 입력 필요'), validate],
-    (req, res, next) => {
+    (req, res) => {
       const { userId } = req.body;
       const sql = 'SELECT * FROM authors WHERE user_id = ?';
 
@@ -50,7 +50,9 @@ router
         if (results.length) {
           res.status(200).json(results);
         } else {
-          notFoundAuthor(res);
+          res.status(404).json({
+            message: '작가 정보를 찾을 수 없습니다.',
+          });
         }
       });
     }
@@ -60,7 +62,7 @@ router
   .route('/:id')
   .get(
     [param('id').notEmpty().withMessage('작가id 필요'), validate],
-    (req, res, next) => {
+    (req, res) => {
       const id = parseInt(req.params.id);
 
       const sql = 'SELECT * FROM authors WHERE id = ?';
@@ -72,7 +74,9 @@ router
         if (results.length) {
           res.status(200).json(results);
         } else {
-          notFoundAuthor(res);
+          res.status(404).json({
+            message: '작가 정보를 찾을 수 없습니다.',
+          });
         }
       });
     }
@@ -83,7 +87,7 @@ router
       body('name').notEmpty().isString().withMessage('작가 이름 필요'),
       validate,
     ],
-    (req, res, next) => {
+    (req, res) => {
       const id = parseInt(req.params.id);
       const { name } = req.body;
 
@@ -104,7 +108,7 @@ router
   )
   .delete(
     [param('id').notEmpty().withMessage('작가id 필요'), validate],
-    (req, res, next) => {
+    (req, res) => {
       const id = parseInt(req.params.id);
 
       const sql = 'DELETE FROM authors WHERE id = ?';
@@ -121,11 +125,5 @@ router
       });
     }
   );
-
-function notFoundAuthor(res) {
-  res.status(404).json({
-    message: '작가 정보를 찾을 수 없습니다.',
-  });
-}
 
 module.exports = router;
